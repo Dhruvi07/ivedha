@@ -1,0 +1,13 @@
+- name: RBCAPP1 Multi-Host Operations
+  hosts: rbcapp1
+  become: yes
+
+  tasks:
+
+    - name: Verify httpd installation
+      package:
+        name: httpd
+        state: present
+      when:
+        - action == "verify_install"
+        - "'httpd_servers' in group_names"
