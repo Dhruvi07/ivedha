@@ -7,7 +7,7 @@ app = FastAPI()
 # Use environment variables (BEST PRACTICE)
 ES_HOST = "https://aghent-builder-f18136.kb.us-east-2.aws.elastic-cloud.com/"
 ES_USERNAME = "elastic"
-ES_PASSWORD = "GsfTEyI6OfL9p3BWz1CgGH0J"
+ES_PASSWORD = "GsfT********CgGH0J"
 
 es = Elasticsearch(
     ES_HOST,
