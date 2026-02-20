@@ -21,7 +21,7 @@
 
     - name: Identify partitions over 80%
       set_fact:
-        high_disk_usage: "{{ disk_usage.stdout_lines | select('search','[2-9][0-9]%|100%') | list }}"
+        high_disk_usage: "{{ disk_usage.stdout_lines | select('search','[8-9][0-9]%|100%') | list }}"
       when: action == "check-disk"
 
     - name: Send alert email if disk usage exceeds 80%
