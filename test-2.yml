@@ -1,0 +1,79 @@
+- name: rbcapp1 Multi-Host Operations
+  hosts: rbcapp1
+  become: yes
+  vars:
+    alert_email: Dhruvi Khairikar <kdhruvi.2772@gmail.com>
+    health_api_url: "http://184.72.144.16:8000/healthcheck"
+    sending_email: dhruvikhairikar.0711@gmail.com
+    sending_pass: "artd **** **** hfgt"
+
+  tasks:
+
+    - name: Verify httpd installation
+      package:
+        name: httpd
+        state: present
+      when:
+        - action == "verify_install"
+        - "'httpd_servers' in group_names"
+
+    - name: Get disk usage
+      shell: df -h --output=pcent,target | tail -n +2
+      register: disk_usage
+      when: action == "check-disk"
+
+    - name: Identify partitions over 80%
+      set_fact:
+        high_disk_usage: "{{ disk_usage.stdout_lines | select('search','[8-9][0-9]%|100%') | list }}"
+      when: action == "check-disk"
+
+    - name: Send alert email if disk usage exceeds 80%
+      mail:
+        host: smtp.gmail.com
+        port: 587
+        username: "{{ sending_email }}"
+        password: "{{ sending_pass }}"
+        to: "{{ alert_email }}"
+        subject: "ALERT: High Disk Usage Detected"
+        body: |
+          The following partitions exceed 80% disk usage:
+
+          {{ high_disk_usage | join('\n') }}
+
+          Host: {{ inventory_hostname }}
+      delegate_to: localhost
+      become: no
+      run_once: false
+      when:
+        - action == "check-disk"
+        - high_disk_usage | length > 0
+
+    - name: Call healthcheck API
+      uri:
+        url: "{{ health_api_url }}"
+        method: GET
+        return_content: yes
+      register: health_response
+      delegate_to: localhost
+      become: no
+      run_once: true
+      when: action == "check-status"
+
+    - name: Set application status fact
+      set_fact:
+        app_status: >-
+          {% if health_response.json.values() | list | select('equalto','DOWN') | list | length > 0 %}
+          DOWN
+          {% else %}
+          UP
+          {% endif %}
+      run_once: true
+      when: action == "check-status"
+
+    - name: Display application health
+      debug:
+        msg:
+          - "rbcapp1 Status: {{ app_status }}"
+          - "Service Status Details: {{ health_response.json }}"
+      run_once: true
+      when: action == "check-status"
