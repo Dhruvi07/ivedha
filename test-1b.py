@@ -4,7 +4,6 @@ import json
 
 app = FastAPI()
 
-# Use environment variables (BEST PRACTICE)
 ES_HOST = "https://aghent-builder-f18136.kb.us-east-2.aws.elastic-cloud.com/"
 ES_USERNAME = "elastic"
 ES_PASSWORD = "GsfT********CgGH0J"
@@ -27,9 +26,9 @@ async def add_service_status(file: UploadFile = File(...)):
 
         if not es.indices.exists(index=INDEX_NAME):
             es.indices.create(index=INDEX_NAME)
-        # Insert into Elasticsearch
+
         es.index(index=INDEX_NAME, document=payload)
-        #ES REST call : POST rbcapp1-health/_doc
+
 
         return {"message": "Document indexed successfully"}
 
