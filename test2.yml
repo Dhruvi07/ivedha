@@ -1,8 +1,9 @@
-- name: RBCAPP1 Multi-Host Operations
+- name: rbcapp1 Multi-Host Operations
   hosts: rbcapp1
   become: yes
   vars:
     alert_email: Dhruvi Khairikar <kdhruvi.2772@gmail.com>
+    health_api_url: "http://184.72.144.16:8000/healthcheck"
 
   tasks:
 
@@ -44,3 +45,33 @@
       when:
         - action == "check-disk"
         - high_disk_usage | length > 0
+
+    - name: Call healthcheck API
+      uri:
+        url: "{{ health_api_url }}"
+        method: GET
+        return_content: yes
+      register: health_response
+      delegate_to: localhost
+      become: no
+      run_once: true
+      when: action == "check-status"
+
+    - name: Set application status fact
+      set_fact:
+        app_status: >-
+          {% if health_response.json.values() | list | select('equalto','DOWN') | list | length > 0 %}
+          DOWN
+          {% else %}
+          UP
+          {% endif %}
+      run_once: true
+      when: action == "check-status"
+
+    - name: Display application health
+      debug:
+        msg:
+          - "rbcapp1 Status: {{ app_status }}"
+          - "Service Status Details: {{ health_response.json }}"
+      run_once: true
+      when: action == "check-status"
