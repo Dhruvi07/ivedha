@@ -11,7 +11,7 @@ ES_PASSWORD = "GsfT********CgGH0J"
 es = Elasticsearch(
     ES_HOST,
     basic_auth=(ES_USERNAME, ES_PASSWORD),
-    verify_certs=False  # Important for HTTPS
+    verify_certs=False
 )
 
 
