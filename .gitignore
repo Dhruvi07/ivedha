@@ -1,2 +1,3 @@
 .env
 inventory.ini
+__pycache__
