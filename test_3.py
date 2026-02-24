@@ -9,6 +9,7 @@ def read_sales_data(filename):
 
     with open(filename, mode="r", newline="") as file:
         reader = csv.DictReader(file)
+        fieldnames = reader.fieldnames
 
         for row in reader:
             try:
@@ -26,21 +27,30 @@ def read_sales_data(filename):
             except (ValueError, KeyError):
                 continue
 
-    return rows
+    if fieldnames and "price_per_sqft" not in fieldnames:
+        fieldnames = fieldnames + ["price_per_sqft"]
+
+    return rows, fieldnames
+
 
 
 def calculate_average_price_per_sqft(rows):
+    if not rows:
+        return 0
     total = sum(float(row["price_per_sqft"]) for row in rows)
-    return total / len(rows) if rows else 0
+    return total / len(rows)
 
 
-def write_filtered_data(rows, average):
+def write_filtered_data(rows, average,fieldnames):
     filtered_rows = [
         row for row in rows
         if float(row["price_per_sqft"]) < average
     ]
 
-    fieldnames = filtered_rows[0].keys()
+    if not filtered_rows:
+        print("No properties found below average price per sqft.")
+        return
+
 
     with open(OUTPUT_FILE, mode="w", newline="") as file:
         writer = csv.DictWriter(file, fieldnames=fieldnames)
@@ -52,9 +62,9 @@ def write_filtered_data(rows, average):
 
 
 def main():
-    rows = read_sales_data(INPUT_FILE)
+    rows, fieldnames = read_sales_data(INPUT_FILE)
     average = calculate_average_price_per_sqft(rows)
-    write_filtered_data(rows, average)
+    write_filtered_data(rows, average, fieldnames)
 
 
 if __name__ == "__main__":
