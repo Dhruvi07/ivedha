@@ -1,0 +1,58 @@
+PUT _ilm/policy/service-status-policy
+{
+  "policy": {
+    "phases": {
+      "hot": {
+        "actions": {
+          "rollover": {
+            "max_age": "1d"
+          }
+        },
+        "min_age": "0ms"
+      },
+      "warm": {
+        "min_age": "7d",
+        "actions": {}
+      },
+      "delete": {
+        "min_age": "30d",
+        "actions": { "delete": {} }
+      }
+    }
+  }
+}
+
+________________________________________________________________________
+
+PUT _index_template/service-status-template
+{
+  "template": {
+    "mappings": {
+      "dynamic_templates": [],
+      "properties": {
+        "@timestamp": {
+          "type": "date"
+        },
+        "service_name": {
+          "type": "keyword"
+        },
+        "service_status": {
+          "type": "keyword"
+        },
+        "host_name": {
+          "type": "keyword"
+        }
+      }
+    },
+    "settings": {
+      "index": {
+        "lifecycle": {
+          "name": "service-status-policy"
+        }
+      }
+    }
+  },
+  "index_patterns": [
+    "service-status-*"
+  ]
+}
