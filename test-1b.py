@@ -33,6 +33,8 @@ async def add_service_status(file: UploadFile = File(...)):
 
         return {"message": "Document indexed successfully"}
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -68,6 +70,8 @@ def get_all_health():
 
         return response
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -97,5 +101,7 @@ def get_service_health(service_name: str):
             "service_status": latest_doc["service_status"]
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
