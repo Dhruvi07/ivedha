@@ -10,6 +10,24 @@ This readme.md is split into two required parts:
 1. How can you set up and test everything
 2. How I did the setup
 
+## Recent Changes (February 24, 2026)
+
+- Renamed `test-3.py` to `test_3.py` for consistent Python module naming.
+- Added unit tests in `test3_test.py`:
+  - empty input handling
+  - average calculation validation
+  - invalid/zero `sq__ft` row filtering behavior
+- Updated `test-1b.py` to read Elasticsearch connection values from environment variables:
+  - `ES_HOST`
+  - `ES_USER`
+  - `ES_PASSWORD`
+- Updated Elasticsearch queries in health endpoints to return latest status using `term` query instead of `match`.
+- Improved `test-2.yml`:
+  - SMTP password sourced from environment via `SMTP_PASSWORD`
+  - Added `WARNING` if the healthcheck API is unreachable.
+- Added `ansible.cfg` with `host_key_checking = False`.
+- Stopped tracking `inventory.ini`; added `inventory*` to `.gitignore`.
+
 ## Part 1: How Can You Set Up and Test Everything
 
 ### A) Prerequisites
@@ -37,7 +55,18 @@ pip install ansible
 
 ### C) Test 1 (Service Status + API + Elasticsearch)
 
-Add correct ES_HOST, ES_USERNAME and ES_PASSWORD in test-1b.py.
+Set these before running API and email-alert workflows in .env file:
+
+```bash
+export ES_HOST="https://<elasticsearch-host>:9200"
+export ES_USER="<elasticsearch-username>"
+export ES_PASSWORD="<elasticsearch-password>"
+export SMTP_PASSWORD="<smtp-app-password>"
+```
+Notes:
+SMTP_PASSWORD is used by Ansible mail task (test-2.yml).
+Keep credentials out of source files and shell history where possible.
+
 
 1. Generate service status JSON files:
 
@@ -93,20 +122,19 @@ Add relevant sender's email id and password and receivers's email id in vars in 
 1. Verify httpd, if not found, install:
 
 ```bash
-ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i inventory.ini test-2.yml -e "action=verify_install"
+ansible-playbook -i inventory.ini test-2.yml -e "action=verify_install"
 ```
 
 2. Check disk usage and alert on >80%:
 
 ```bash
-ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i inventory.ini test-2.yml -e "action=check-disk"
+ansible-playbook -i inventory.ini test-2.yml -e "action=check-disk"
 ```
-
 
 3. Check application status from API:
 
 ```bash
-ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i inventory.ini test-2.yml -e "action=check-status"
+ansible-playbook -i inventory.ini test-2.yml -e "action=check-status"
 ```
 
 Expected result:
@@ -126,8 +154,14 @@ Expected result:
 
 ### E) Test 3 (CSV Data Processing)
 
+Run the script:
 ```bash
-python3 test-3.py
+python3 test_3.py
+```
+
+Run unit tests:
+```bash
+pytest -q test3_test.py
 ```
 
 Expected result:
@@ -135,6 +169,7 @@ Expected result:
 - Computes `price_per_sqft`
 - Writes below-average rows to `filtered-sales-data.csv`
 - Prints average and number of rows written
+- Unit tests pass for edge and normal cases
 
 ### F) Troubleshooting
 
@@ -150,6 +185,11 @@ pip install python-multipart
 chmod 400 /Users/dhruvi/Downloads/Poc-dhruvi.pem
 ```
 
+3. Ansible runtime notes:
+
+- ansible.cfg already sets host_key_checking = False; exporting ANSIBLE_HOST_KEY_CHECKING=False is optional.
+- inventory.ini is intentionally untracked. Keep your local inventory private and environment-specific.
+- Ensure SMTP_PASSWORD is exported before running check-disk.
 
 ---
 
@@ -167,6 +207,7 @@ This is the setup and implementation flow reflected by repository files and hist
   - `POST /add`
   - `GET /healthcheck`
   - `GET /healthcheck/{service_name}`
+- Updated ES access to use environment variables (ES_HOST, ES_USER, ES_PASSWORD).
 
 - Run `python3 test1a.py` to run the file
 - Run `uvicorn test1b:app --host 0.0.0.0 --port 8000` to run the file
@@ -193,23 +234,28 @@ curl localhost:8000/healthcheck/rabbitmq-server
 ### 3) Built Test 2 automation playbook
 
 - Added and iterated Ansible playbook (current file: `test-2.yml`).
+- Later stopped tracking this file in git for safety and local flexibility.
+
 - Implemented action-driven execution:
   - `verify_install`
   - `check-disk`
   - `check-status`
 - Added disk usage parsing and alert email behavior.
 - Added API health check integration into Ansible flow.
+- Moved SMTP secret to env var lookup (SMTP_PASSWORD).
+- Added ansible.cfg to disable host key checks by default.
+
 To test if the functionality is working, decreased the alert limit to 20% momentarily by changing the regex to [2-9][0-9]%
 ```bash
-ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i inventory.ini test-2.yml -e "action=verify_install"
-ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i inventory.ini test-2.yml -e "action=check-disk"
-ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i inventory.ini test-2.yml -e "action=check-status"
+ansible-playbook -i inventory.ini test-2.yml -e "action=verify_install"
+ansible-playbook -i inventory.ini test-2.yml -e "action=check-disk"
+ansible-playbook -i inventory.ini test-2.yml -e "action=check-status"
 ```
 
 ### 4) Built Test 3 data script
 
-- Added `test-3.py` to process `Assignment python.csv`, compute per-row `price_per_sqft`, calculate average, and export below-average rows to `filtered-sales-data.csv`.
-
+- Added `test_3.py` to process `Assignment python.csv`, compute per-row `price_per_sqft`, calculate average, and export below-average rows to `filtered-sales-data.csv`.
+- Added unit tests in test3_test.py for core logic and edge handling.
 
 
 ### 5) Special run instructions
@@ -217,6 +263,52 @@ ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i inventory.ini test-2.yml -e 
 - `test-1a.py` requires Linux + systemd because it calls `systemctl`.
 - Keep API running before executing `check-status` in Ansible.
 - `inventory.ini` must point to valid reachable hosts and SSH key path.
-- Replace hardcoded credentials/secrets in scripts/playbook with env vars or vault before production use.
-- Add `ANSIBLE_HOST_KEY_CHECKING=False` to make that it skips fingerprint validation and automatically accepts unknown hosts.
+- Replace local/test credentials with secure secret handling for production.
 - Added extra field of @timestamp in test-1a.py for the sorting to get the latest results.
+
+## Supplementary Questions Notes
+
+### SQ-Part 2: Network Reachability Script
+
+File: `part2/q1.sh`
+
+- Checks host reachability and service ports for a fixed host list.
+- Validates:
+  - SSH (`22`)
+  - HTTP (`80`)
+  - RabbitMQ (`5672`)
+  - PostgreSQL (`5432`)
+- Prints per-host status summary.
+- Exits non-zero if any SSH check fails (`failure=1`).
+
+---
+
+### SQ-Part 3: Scheduler + Watcher
+
+Files:
+- `part3/q1`
+- `part3/q2.json`
+
+`part3/q1`:
+- Cron entry executes a Python script every 5 minutes and appends logs:
+```cron
+*/5 * * * * /usr/bin/python3 /home/ec2-user/test.py >> /home/ec2-user/test.log
+
+`part3/q2`:
+
+- Elasticsearch Watcher definition `(service-down-watch)`.
+- Runs every 1 minute.
+- Aggregates latest document per service from rbcapp1-health.
+- Triggers email alert when any latest service status is DOWN.
+- Uses throttle window to avoid noisy repeated alerts.
+
+### SQ-Part 5: ILM + Index Template
+File: `q1.json`
+
+- Defines ILM policy service-status-policy:
+  - hot rollover after 1d
+  - warm phase at 7d
+  - delete phase at 30d
+- Defines index template service-status-template for service-status-*:
+  - mappings for @timestamp, service_name, service_status, host_name
+  - lifecycle policy attachment via index settings
