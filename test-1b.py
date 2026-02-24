@@ -1,12 +1,13 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from elasticsearch import Elasticsearch
 import json
+import os
 
 app = FastAPI()
 
-ES_HOST = "https://aghent-builder-f18136.kb.us-east-2.aws.elastic-cloud.com/"
-ES_USERNAME = "elastic"
-ES_PASSWORD = "GsfT********CgGH0J"
+ES_HOST = os.getenv("ES_HOST")
+ES_USERNAME = os.getenv("ES_USER")
+ES_PASSWORD = os.getenv("ES_PASSWORD")
 
 es = Elasticsearch(
     ES_HOST,

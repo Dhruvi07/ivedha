@@ -5,7 +5,7 @@
     alert_email: Dhruvi Khairikar <kdhruvi.2772@gmail.com>
     health_api_url: "http://184.72.144.16:8000/healthcheck"
     sending_email: dhruvikhairikar.0711@gmail.com
-    sending_pass: "artd **** **** hfgt"
+    sending_pass: "{{ lookup('env', 'SMTP_PASSWORD') }}"
 
   tasks:
 
