@@ -42,24 +42,21 @@ async def add_service_status(file: UploadFile = File(...)):
 @app.get("/healthcheck")
 def get_all_health():
     try:
-        query = {
-            "size": 0,
-            "aggs": {
-                "services": {
-                    "terms": {"field": "service_name.keyword"},
-                    "aggs": {
-                        "latest_status": {
-                            "top_hits": {
-                                "size": 1,
-                                "sort": [{"@timestamp": {"order": "desc"}}]
-                            }
+        aggs = {
+            "services": {
+                "terms": {"field": "service_name.keyword"},
+                "aggs": {
+                    "latest_status": {
+                        "top_hits": {
+                            "size": 1,
+                            "sort": [{"@timestamp": {"order": "desc"}}]
                         }
                     }
                 }
             }
         }
 
-        result = es.search(index=INDEX_NAME, body=query)
+        result = es.search(index=INDEX_NAME, aggs=aggs, size=0)
 
         response = {}
 
@@ -80,16 +77,13 @@ def get_all_health():
 def get_service_health(service_name: str):
     try:
         query = {
-            "size": 1,
-            "query": {
-                "term": {
-                    "service_name.keyword": service_name
-                }
-            },
-            "sort": [{"@timestamp": {"order": "desc"}}]
+            "term": {
+                "service_name.keyword": service_name
+            }     
         }
+        sort=[{"@timestamp": {"order": "desc"}}]
 
-        result = es.search(index=INDEX_NAME, body=query)
+        result = es.search(index=INDEX_NAME, query=query, sort=sort, size=1)
 
         if result["hits"]["total"]["value"] == 0:
             raise HTTPException(status_code=404, detail="Service not found")
