@@ -12,7 +12,7 @@ ES_PASSWORD = os.getenv("ES_PASSWORD")
 es = Elasticsearch(
     ES_HOST,
     basic_auth=(ES_USERNAME, ES_PASSWORD),
-    verify_certs=False
+    verify_certs=True
 )
 
 
