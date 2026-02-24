@@ -1,0 +1,1 @@
+*/5 * * * * /usr/bin/python3 /home/ec2-user/test.py >> /home/ec2-user/test.log

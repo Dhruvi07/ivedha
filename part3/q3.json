@@ -1,0 +1,79 @@
+PUT _watcher/watch/service-down-watch
+{
+  "trigger": {
+    "schedule": {
+      "interval": "1m"
+    }
+  },
+  "input": {
+    "search": {
+      "request": {
+        "search_type": "query_then_fetch",
+        "indices": [
+          "rbcapp1-health"
+        ],
+        "rest_total_hits_as_int": true,
+        "body": {
+          "size": 0,
+          "aggs": {
+            "services": {
+              "terms": {
+                "field": "service_name.keyword",
+                "size": 10
+              },
+              "aggs": {
+                "latest_status": {
+                  "top_hits": {
+                    "size": 1,
+                    "sort": [
+                      {
+                        "@timestamp": {
+                          "order": "desc"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "condition": {
+    "script": {
+      "source": """
+        for (def bucket : ctx.payload.aggregations.services.buckets) {
+          def status = bucket.latest_status.hits.hits[0]._source.service_status;
+          if (status == 'DOWN') {
+            return true;
+          }
+        }
+        return false;
+      """,
+      "lang": "painless"
+    }
+  },
+  "actions": {
+    "email_alert": {
+      "throttle_period_in_millis": 300000,
+      "email": {
+        "profile": "standard",
+        "to": [
+          "kdhruvi.2772@gmail.com"
+        ],
+        "subject": "RBCAPP1 Service DOWN Alert",
+        "body": {
+          "text": """ 
+            One or more services are DOWN therefore "rbcapp1" is DOWN.
+            Details:
+            {{#ctx.payload.aggregations.services.buckets}}
+            Service: {{key}}
+            Latest Status: {{latest_status.hits.hits.0._source.service_status}}
+            {{/ctx.payload.aggregations.services.buckets}} """
+        }
+      }
+    }
+  }
+}
