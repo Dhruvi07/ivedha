@@ -82,8 +82,8 @@ def get_service_health(service_name: str):
         query = {
             "size": 1,
             "query": {
-                "match": {
-                    "service_name": service_name
+                "term": {
+                    "service_name.keyword": service_name
                 }
             },
             "sort": [{"@timestamp": {"order": "desc"}}]
