@@ -54,10 +54,16 @@
         method: GET
         return_content: yes
       register: health_response
+      ignore_errors: yes
       delegate_to: localhost
       become: no
       run_once: true
       when: action == "check-status"
+
+    - name: Warn if API unreachable
+      debug:
+      msg: "WARNING: Healthcheck API is unreachable"
+      when: health_response is failed
 
     - name: Set application status fact
       set_fact:
