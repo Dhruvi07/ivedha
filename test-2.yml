@@ -62,8 +62,10 @@
 
     - name: Warn if API unreachable
       debug:
-      msg: "WARNING: Healthcheck API is unreachable"
-      when: health_response is failed
+        msg: "WARNING: Healthcheck API is unreachable"
+      when:
+        - action == "check-status"
+        - health_response is failed
 
     - name: Set application status fact
       set_fact:
@@ -74,7 +76,9 @@
           UP
           {% endif %}
       run_once: true
-      when: action == "check-status"
+      when: 
+        - action == "check-status"
+        - health_response is not failed
 
     - name: Display application health
       debug:
@@ -82,4 +86,6 @@
           - "rbcapp1 Status: {{ app_status }}"
           - "Service Status Details: {{ health_response.json }}"
       run_once: true
-      when: action == "check-status"
+      when: 
+        - action == "check-status"
+        - health_response is not failed
