@@ -9,6 +9,20 @@ ES_HOST = os.getenv("ES_HOST")
 ES_USERNAME = os.getenv("ES_USER")
 ES_PASSWORD = os.getenv("ES_PASSWORD")
 
+missing_vars = []
+
+if not ES_HOST:
+    missing_vars.append("ES_HOST")
+if not ES_USERNAME:
+    missing_vars.append("ES_USER")
+if not ES_PASSWORD:
+    missing_vars.append("ES_PASSWORD")
+
+if missing_vars:
+    raise RuntimeError(
+        f"Missing required environment variables: {', '.join(missing_vars)}"
+    )
+
 es = Elasticsearch(
     ES_HOST,
     basic_auth=(ES_USERNAME, ES_PASSWORD),
